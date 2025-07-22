@@ -19,6 +19,7 @@ const conversationRoutes = require('./routes/conversations');
 const scheduledMeetingsRoutes = require('./routes/scheduledMeetings');
 const talkTimeRoutes = require('./routes/talkTime');
 const conversionsRoutes = require('./routes/conversions');
+const screeningFormRoutes = require('./routes/screeningForm.routes');
 const auth = require('./routes/auth');
 const util = require('./routes/util');
 
@@ -35,6 +36,8 @@ app.use('/server/conversions', conversionsRoutes);
 app.use('/server/auth', auth);
 
 app.use('/server/util', util);
+
+app.use('/server/screening-form', screeningFormRoutes);
 
 
 //test
@@ -374,6 +377,28 @@ async function initDB() {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );`
+
+      const createScreeningFormTable = `
+  CREATE TABLE IF NOT EXISTS screening_forms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    date_of_birth DATE,
+    sex VARCHAR(20),
+    support_text TEXT,
+    therapist_history TEXT,
+    emotional_score_1 INT,
+    session_type_1 VARCHAR(50),
+    emotional_score_2 INT,
+    session_type_2 VARCHAR(50),
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+`;
+
+
+
     const seedRole1 = `INSERT INTO role (name, role_id) VALUES ('Super Admin', 1);`
     const seedRole2 = `INSERT INTO role (name, role_id) VALUES ('Admin', 2);`
     const connection = await pool.getConnection();
@@ -383,6 +408,8 @@ async function initDB() {
     await connection.query(createTalkTimeTable);
     await connection.query(createTalkTimeAllTable);
     await connection.query(createConversionTable);
+    await connection.query(createScreeningFormTable);
+
 
     /* Updates */
     await connection.query(Role);
