@@ -22,31 +22,31 @@ router
         Signup
     )
     .put('/change-password',
-        VerifyToken(),
+        VerifyToken,
         ChangePassword
     )
     .put('/update-profile',
-        VerifyToken(),
+        VerifyToken,
         UpdateProfile
     )
     .post('/create-admin',
-        // VerifyToken(),
+        // VerifyToken,
         CreateAdmin
     )
     .get('/list',
-        VerifyToken(),
+        VerifyToken,
         GetAdmins
     )
     .put('/update-admin/:id',
-        VerifyToken(),
+        VerifyToken,
         UpdateAdminProfile
     )
     .delete('/delete-admin/:id',
-        VerifyToken(),
+        VerifyToken,
         DeleteAdmin
     )
     .get('/profile',
-        VerifyToken(),
+        VerifyToken,
         GetProfile
     );
 

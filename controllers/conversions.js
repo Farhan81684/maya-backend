@@ -36,10 +36,8 @@ exports.getConversationsByRange = async (req, res) => {
     const endDate = new Date(end_date).toISOString().slice(0, 10);
 
     const [rows] = await pool.query(`SELECT purchase_count, period_date, project_name FROM conversions WHERE project_name IN (${project_names.map(() => '?').join(',')}) AND period_date >= ? AND period_date <= ?`, [...project_names, startDate, endDate]);
-    // if (rows.length === 0) {
-    //   return res.status(404).json({ error: 'No conversion data found' });
-    // }
-    // Process the rows
+
+    console.log(rows)
     let total = {};
     rows.forEach((row) => {
       const { project_name, purchase_count } = row;
@@ -53,7 +51,7 @@ exports.getConversationsByRange = async (req, res) => {
         total[project_name] = 0;
       }
     });
-
+console.log(total)
     return res.json(total);
   } catch (error) {
     console.error(error);

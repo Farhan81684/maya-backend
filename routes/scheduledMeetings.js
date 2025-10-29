@@ -5,32 +5,32 @@ const { VerifyToken, ExportCSV } = require('../middlewares');
 
 // POST, GET all, PUT (by ID)
 router.post('/range',
-    VerifyToken(),
+    VerifyToken,
     scheduledMeetingsController.getMeetingsByRange);
 
 router.post('/range/csv',
-    VerifyToken(),
+    VerifyToken,
     scheduledMeetingsController.getMeetingsByRange,
     ExportCSV);
 
 router.post('/timeframe',
-    VerifyToken(),
+    VerifyToken,
     scheduledMeetingsController.GetByTimeframe);
 
 router.post('/graph',
-    // VerifyToken(),
+    // VerifyToken,
     scheduledMeetingsController.GetGraph);
 
 router.post('/',
-    VerifyToken(),
+    VerifyToken,
     scheduledMeetingsController.createScheduledMeeting);
 
 router.get('/',
-    VerifyToken(),
+    VerifyToken,
     scheduledMeetingsController.getAllScheduledMeetings);
 
 router.put('/:id',
-    VerifyToken(),
+    VerifyToken,
     scheduledMeetingsController.updateScheduledMeeting);
 
 module.exports = router;

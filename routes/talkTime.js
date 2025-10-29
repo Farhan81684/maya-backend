@@ -5,11 +5,11 @@ const { VerifyToken, ExportCSV } = require('../middlewares');
 
 // POST, GET all, PUT (by ID)
 router.post('/range',
-    VerifyToken(),
+    VerifyToken,
     getTalkTimeByRange);
 
 router.post('/range/csv',
-    VerifyToken(),
+    VerifyToken,
     getTalkTimeByRangeCSV,
     ExportCSV);
 
@@ -20,7 +20,7 @@ router.post('/',
     createTalkTime);
 
 router.get('/',
-    VerifyToken(),
+    VerifyToken,
     getAllTalkTime);
 
 router.get(

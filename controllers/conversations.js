@@ -172,7 +172,7 @@ exports.getConversationsByRangeCSV = async (req, res, next) => {
     if (timeframe == 'Today') {
       let hourly = {}
       rows?.forEach((row) => {
-        console.log({ row })
+        // console.log({ row })
         let date = new Date(row?.period_time).toISOString()?.slice(11, 13)
         console.log({ date, row })
         if (hourly[`${date}`])

@@ -5,24 +5,24 @@ const { VerifyToken, ExportCSV } = require('../middlewares');
 
 // POST, GET all, PUT (by ID)
 router.post('/range',
-    VerifyToken(),
+    VerifyToken,
     conversionRatesController.getConversationsByRange);
 
 router.post('/range/csv',
-    VerifyToken(),
+    VerifyToken,
     conversionRatesController.getConversationsByRange,
     ExportCSV);
 
 router.post('/',
-    VerifyToken(),
+    VerifyToken,
     conversionRatesController.createConversions);
 
 router.get('/',
-    VerifyToken(),
+    VerifyToken,
     conversionRatesController.getAllConversions);
 
 router.put('/:id',
-    VerifyToken(),
+    VerifyToken,
     conversionRatesController.updateConversions);
 
 module.exports = router;

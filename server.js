@@ -1,48 +1,46 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-const pool = require('./config/db.config'); // Our MySQL pool
-const path = require('path')
+require("dotenv").config();
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
+const pool = require("./config/db.config"); // Our MySQL pool
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Route imports
-const conversationRoutes = require('./routes/conversations');
-const scheduledMeetingsRoutes = require('./routes/scheduledMeetings');
-const talkTimeRoutes = require('./routes/talkTime');
-const conversionsRoutes = require('./routes/conversions');
-const screeningFormRoutes = require('./routes/screeningForm.routes');
-const auth = require('./routes/auth');
-const util = require('./routes/util');
-
+const conversationRoutes = require("./routes/conversations");
+const scheduledMeetingsRoutes = require("./routes/scheduledMeetings");
+const talkTimeRoutes = require("./routes/talkTime");
+const conversionsRoutes = require("./routes/conversions");
+const screeningFormRoutes = require("./routes/screeningForm.routes");
+const auth = require("./routes/auth");
+const util = require("./routes/util");
+const dashboardData = require("./routes/dashboardData.routes");
 
 // Mount routes
-app.use('/server/conversations', conversationRoutes);
+app.use("/server/conversations", conversationRoutes);
 
-app.use('/server/scheduled-meetings', scheduledMeetingsRoutes);
+app.use("/server/scheduled-meetings", scheduledMeetingsRoutes);
 
-app.use('/server/talk-time', talkTimeRoutes);
+app.use("/server/talk-time", talkTimeRoutes);
 
-app.use('/server/conversions', conversionsRoutes);
+app.use("/server/conversions", conversionsRoutes);
 
-app.use('/server/auth', auth);
+app.use("/server/auth", auth);
 
-app.use('/server/util', util);
+app.use("/server/util", util);
 
-app.use('/server/screening-form', screeningFormRoutes);
+app.use("/server/dashboard", dashboardData);
 
+app.use("/server/screening-form", screeningFormRoutes);
 
 //test
-app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Welcome to the Analytics API!' });
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "Welcome to the Analytics API!" });
 });
 
 // app.post('/server/calendly', (req, res) => {
@@ -50,7 +48,7 @@ app.get('/', (req, res) => {
 //   console.log('Received Calendly webhook:', req.body);
 
 //   // (Optional) Validate the webhook signature here if you want to verify authenticity.
-//   // Example: 
+//   // Example:
 //   // const signature = req.headers['calendly-signature'];
 //   // if (!verifySignature(req.body, signature, process.env.CALENDLY_SIGNING_SECRET)) {
 //   //   return res.sendStatus(401);
@@ -90,51 +88,81 @@ app.get('/', (req, res) => {
 //   res.status(200).send('Webhook received');
 // });
 
-app.post('/server/hubspot-webhook', async (req, res) => {
-  try {
-    const events = req.body;
-    // console.log('webhook events:', events);
-    const vid = events?.vid || events?.properties?.hs_object_id?.value || events['canonical-vid'];
-    const email = events?.properties?.email?.value;
-    const periodDate = new Date().toISOString().slice(0, 10);
+// app.post("/server/hubspot-webhook", async (req, res) => {
+//   try {
+//     const events = req.body;
+//     // console.log('webhook events:', events);
+//     const vid =
+//       events?.vid ||
+//       events?.properties?.hs_object_id?.value ||
+//       events["canonical-vid"];
+//     const email = events?.properties?.email?.value;
+//     const periodDate = new Date().toISOString().slice(0, 10);
 
-    // const { startTime, endTime } = await fetchMeetingStart(vid);
-    const { startTime, endTime } = await fetchLatestMeeting(vid);
-    console.log('startTime: ', startTime, 'email: ', email, 'periodDate: ', periodDate);
+//     // const { startTime, endTime } = await fetchMeetingStart(vid);
+//     const { startTime, endTime } = await fetchLatestMeeting(vid);
+//     console.log(
+//       "startTime: ",
+//       startTime,
+//       "email: ",
+//       email,
+//       "periodDate: ",
+//       periodDate
+//     );
 
-    const [rows] = await pool.query(`SELECT * FROM scheduled_meetings_copy WHERE email = ? AND start_time = ?`, [email, startTime]);
-    if (rows.length > 0) {
-      return res.status(200).send('Webhook received');
-    }
+//     const [rows] = await pool.query(
+//       `SELECT * FROM scheduled_meetings_copy WHERE email = ? AND start_time = ?`,
+//       [email, startTime]
+//     );
+//     if (rows.length > 0) {
+//       return res.status(200).send("Webhook received");
+//     }
 
-    await pool.query(
-      `INSERT INTO scheduled_meetings_copy (period_date, meeting_count, email, start_time, end_time) VALUES (?, ?, ?, ?, ?)`,
-      [periodDate, 1, email, startTime.slice(0, 19).replace('T', ' '), endTime.slice(0, 19).replace('T', ' ')]
-    );
+//     await pool.query(
+//       `INSERT INTO scheduled_meetings_copy (period_date, meeting_count, email, start_time, end_time) VALUES (?, ?, ?, ?, ?)`,
+//       [
+//         periodDate,
+//         1,
+//         email,
+//         startTime.slice(0, 19).replace("T", " "),
+//         endTime.slice(0, 19).replace("T", " "),
+//       ]
+//     );
 
-    res.status(200).send('Webhook received');
-  } catch (error) {
-    console.error('Error in /server/hubspot-webhook', error?.message || error);
-  }
-});
+//     res.status(200).send("Webhook received");
+//   } catch (error) {
+//     console.error("Error in /server/hubspot-webhook", error?.message || error);
+//   }
+// });
 
-app.post('/server/hubspot-webhook-confirmation', async (req, res) => {
-  try {
-    const { project_name, user_id, start_time, end_time, email } = req.body;
-    const periodDate = new Date().toISOString().slice(0, 10);
-    const startTime = new Date(start_time).toISOString().slice(0, 19).replace('T', ' ');
-    const endTime = new Date(end_time).toISOString().slice(0, 19).replace('T', ' ');
+// app.post("/server/hubspot-webhook-confirmation", async (req, res) => {
+//   try {
+//     const { project_name, user_id, start_time, end_time, email } = req.body;
+//     const periodDate = new Date().toISOString().slice(0, 10);
+//     const startTime = new Date(start_time)
+//       .toISOString()
+//       .slice(0, 19)
+//       .replace("T", " ");
+//     const endTime = new Date(end_time)
+//       .toISOString()
+//       .slice(0, 19)
+//       .replace("T", " ");
 
-    await pool.query(
-      `INSERT INTO scheduled_meetings (project_name, user_id, period_date, meeting_count, email, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [project_name, user_id, periodDate, 1, email, startTime, endTime]
-    );
-    res.json({ message: 'Scheduled meeting created successfully!' });
-  } catch (error) {
-    console.error('Error in /server/hubspot-webhook-confirmation: ', error?.message || error);
-    res.status(500).json({ error: 'Failed to validate hubspot webhooks data!' });
-  }
-});
+//     await pool.query(
+//       `INSERT INTO scheduled_meetings (project_name, user_id, period_date, meeting_count, email, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//       [project_name, user_id, periodDate, 1, email, startTime, endTime]
+//     );
+//     res.json({ message: "Scheduled meeting created successfully!" });
+//   } catch (error) {
+//     console.error(
+//       "Error in /server/hubspot-webhook-confirmation: ",
+//       error?.message || error
+//     );
+//     res
+//       .status(500)
+//       .json({ error: "Failed to validate hubspot webhooks data!" });
+//   }
+// });
 
 // async function fetchMeetingStart(vid) {
 //   try {
@@ -158,73 +186,71 @@ app.post('/server/hubspot-webhook-confirmation', async (req, res) => {
 // }
 // fetchMeetingStart('104474914536');
 
-async function fetchLatestMeeting(vid) {
-  // 1) Build endpoint and token
-  const token = process.env.HUBSPOT_API_KEY;
-  const url = 'https://api.hubapi.com/crm/v3/objects/meetings/search';
+// async function fetchLatestMeeting(vid) {
+//   // 1) Build endpoint and token
+//   const token = process.env.HUBSPOT_API_KEY;
+//   const url = "https://api.hubapi.com/crm/v3/objects/meetings/search";
 
-  // 2) Construct search payload
-  const body = {
-    filterGroups: [
-      {
-        filters: [
-          {
-            propertyName: 'associations.contact',
-            operator: 'EQ',
-            value: vid
-          }
-        ]
-      }
-    ],
-    sorts: [
-      {
-        propertyName: 'hs_createdate',
-        direction: 'DESCENDING'
-      }
-    ],
-    properties: [
-      'hs_meeting_start_time',
-      'hs_meeting_end_time'
-    ],
-    limit: 1
-  };
+//   // 2) Construct search payload
+//   const body = {
+//     filterGroups: [
+//       {
+//         filters: [
+//           {
+//             propertyName: "associations.contact",
+//             operator: "EQ",
+//             value: vid,
+//           },
+//         ],
+//       },
+//     ],
+//     sorts: [
+//       {
+//         propertyName: "hs_createdate",
+//         direction: "DESCENDING",
+//       },
+//     ],
+//     properties: ["hs_meeting_start_time", "hs_meeting_end_time"],
+//     limit: 1,
+//   };
 
-  try {
-    // 3) POST to the Search API
-    const { data } = await axios.post(url, body, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    console.log('data new api: ', data);
+//   try {
+//     // 3) POST to the Search API
+//     const { data } = await axios.post(url, body, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
+//     console.log("data new api: ", data);
 
-    // 4) Extract the single hit (if any)
-    const hit = data.results?.[0];
-    if (!hit) return null;
+//     // 4) Extract the single hit (if any)
+//     const hit = data.results?.[0];
+//     if (!hit) return null;
 
-    console.log('new data: ', {
-      startTime: hit.properties.hs_meeting_start_time,
-      endTime: hit.properties.hs_meeting_end_time
-    });
+//     console.log("new data: ", {
+//       startTime: hit.properties.hs_meeting_start_time,
+//       endTime: hit.properties.hs_meeting_end_time,
+//     });
 
-    return {
-      startTime: hit.properties.hs_meeting_start_time,
-      endTime: hit.properties.hs_meeting_end_time
-    };
-  } catch (err) {
-    console.error('Error fetching latest meeting:', err.response?.data || err.message);
-    throw err;
-  }
-}
+//     return {
+//       startTime: hit.properties.hs_meeting_start_time,
+//       endTime: hit.properties.hs_meeting_end_time,
+//     };
+//   } catch (err) {
+//     console.error(
+//       "Error fetching latest meeting:",
+//       err.response?.data || err.message
+//     );
+//     throw err;
+//   }
+// }
 
-
-app.use('/server', (req, res) => {
-  res.status(200).json({ message: 'Welcome to the Analytics API!' });
+app.use("/server", (req, res) => {
+  res.status(200).json({ message: "Welcome to the Analytics API!" });
 });
 
-
-// OPTIONAL: Initialize / ensure DB tables exist. 
+// OPTIONAL: Initialize / ensure DB tables exist.
 // In production, use migrations (e.g., Sequelize, Knex, etc.).
 async function initDB() {
   try {
@@ -306,7 +332,6 @@ async function initDB() {
     //     );
     //   `;
 
-
     /* Updates */
 
     const Role = `CREATE TABLE IF NOT EXISTS role (
@@ -315,7 +340,7 @@ async function initDB() {
         role_id INT NOT NULL UNIQUE,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        );`
+        );`;
     const User = `CREATE TABLE IF NOT EXISTS user (
         id INT AUTO_INCREMENT PRIMARY KEY,
         password VARCHAR(255),
@@ -334,7 +359,7 @@ async function initDB() {
         FOREIGN KEY (role_id) REFERENCES role(role_id)
           ON DELETE SET NULL
           ON UPDATE CASCADE
-      );`
+      );`;
     const Session = `
           CREATE TABLE IF NOT EXISTS session (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -346,7 +371,7 @@ async function initDB() {
         FOREIGN KEY (user_id) REFERENCES user(id)
           ON DELETE CASCADE
           ON UPDATE CASCADE
-      );`
+      );`;
     const KPIs = `
        CREATE TABLE IF NOT EXISTS kpi (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -354,7 +379,7 @@ async function initDB() {
         purchase_clicks INT,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );`
+      );`;
 
     const CallToAction = `
        CREATE TABLE IF NOT EXISTS call_to_action (
@@ -367,7 +392,7 @@ async function initDB() {
         talk_time VARCHAR(255) DEFAULT NULL,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );`
+      );`;
     const CallToActionKPIs = `
        CREATE TABLE IF NOT EXISTS call_to_action_kpi (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -376,9 +401,9 @@ async function initDB() {
         type VARCHAR(255) DEFAULT 'pricing',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );`
+      );`;
 
-      const createScreeningFormTable = `
+    const createScreeningFormTable = `
   CREATE TABLE IF NOT EXISTS screening_forms (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(255) NOT NULL,
@@ -397,19 +422,43 @@ async function initDB() {
   );
 `;
 
+    const createDashboardTable = `
+  CREATE TABLE IF NOT EXISTS dashboard (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    messages VARCHAR(255),
+    isMeetingBooked BOOLEAN DEFAULT FALSE,
+    isSPVclicked BOOLEAN DEFAULT FALSE,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+`;
 
+    const seedRole1 = `
+  INSERT INTO role (name, role_id)
+  SELECT * FROM (SELECT 'Super Admin' AS name, 1 AS role_id) AS tmp
+  WHERE NOT EXISTS (
+    SELECT 1 FROM role WHERE role_id = 1 OR name = 'Super Admin'
+  ) LIMIT 1;
+`;
 
-    const seedRole1 = `INSERT INTO role (name, role_id) VALUES ('Super Admin', 1);`
-    const seedRole2 = `INSERT INTO role (name, role_id) VALUES ('Admin', 2);`
+    const seedRole2 = `
+  INSERT INTO role (name, role_id)
+  SELECT * FROM (SELECT 'Admin' AS name, 2 AS role_id) AS tmp
+  WHERE NOT EXISTS (
+    SELECT 1 FROM role WHERE role_id = 2 OR name = 'Admin'
+  ) LIMIT 1;
+`;
+
     const connection = await pool.getConnection();
     await connection.query(createConversationTable);
+    await connection.query(createDashboardTable);
+
     await connection.query(createMeetingsTable);
     await connection.query(createMeetingsTable2);
     await connection.query(createTalkTimeTable);
     await connection.query(createTalkTimeAllTable);
     await connection.query(createConversionTable);
     await connection.query(createScreeningFormTable);
-
 
     /* Updates */
     await connection.query(Role);
@@ -418,18 +467,20 @@ async function initDB() {
     await connection.query(Session);
     await connection.query(KPIs);
     await connection.query(CallToActionKPIs);
+        await connection.query(seedRole1);
+    await connection.query(seedRole2);
     connection.release();
 
-    console.log('All tables ensured/created successfully');
+    console.log("All tables ensured/created successfully");
   } catch (err) {
-    console.error('Error initializing the database:', err);
+    console.error("Error initializing the database:", err);
   }
 }
 initDB();
 
-app.use('/images', express.static(path.join(__dirname, 'uploads')));
+app.use("/images", express.static(path.join(__dirname, "uploads")));
 
 // const PORT = process.env.PORT || 4000;
-app.listen(process.env.PORT, '0.0.0.0', () => {
+app.listen(process.env.PORT, "0.0.0.0", () => {
   console.log(`Analytics server running on port ${process.env.PORT}`);
 });

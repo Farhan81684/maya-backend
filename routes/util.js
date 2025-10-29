@@ -20,14 +20,14 @@ router
         InsertKPI
     )
     .get('/kpi',
-        // VerifyToken(),
+        // VerifyToken,
         GetKPIsV2
     )
     .post('/call-to-action',
         CallToAction
     )
     .post('/upload',
-        VerifyToken(),
+        VerifyToken,
         Upload
     )
 
